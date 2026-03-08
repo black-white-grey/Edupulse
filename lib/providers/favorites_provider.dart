@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/paper.dart';
-import '../services/database_service.dart';
+import '../services/hive_service.dart';
 
 class FavoritesProvider extends ChangeNotifier {
-  final DatabaseService _dbService = DatabaseService();
-  final List<Paper> _favorites = [];
+  final HiveService _hiveService = HiveService();
+  List<Paper> _favorites = [];
 
   List<Paper> get favorites => List.unmodifiable(_favorites);
 
@@ -12,25 +12,25 @@ class FavoritesProvider extends ChangeNotifier {
     _loadFavorites();
   }
 
-  Future<void> _loadFavorites() async {
-    final papers = await _dbService.getFavoritePapers();
-    _favorites.clear();
-    _favorites.addAll(papers);
+  void _loadFavorites() {
+    _favorites = _hiveService.getFavoritePapers();
     notifyListeners();
   }
 
   bool isFavorite(Paper paper) {
-    return _favorites.any((p) => p.title == paper.title);
+    return _hiveService.isFavorite(paper.title);
   }
 
   Future<void> toggleFavorite(Paper paper) async {
-    if (isFavorite(paper)) {
-      await _dbService.deletePaper(paper.title);
-      _favorites.removeWhere((p) => p.title == paper.title);
-    } else {
-      await _dbService.insertPaper(paper);
-      _favorites.add(paper);
+    try {
+      if (isFavorite(paper)) {
+        await _hiveService.deletePaper(paper.title);
+      } else {
+        await _hiveService.savePaper(paper);
+      }
+      _loadFavorites();
+    } catch (e) {
+      debugPrint('Error toggling favorite: $e');
     }
-    notifyListeners();
   }
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../models/paper.dart';
 import '../services/ai_service.dart';
 import '../widgets/citation_sheet.dart';
+import '../providers/favorites_provider.dart';
 
 class PaperDetailScreen extends StatefulWidget {
   final Paper paper;
@@ -66,6 +68,8 @@ class _PaperDetailScreenState extends State<PaperDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isSaved = favoritesProvider.isFavorite(widget.paper);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Paper Details')),
@@ -127,54 +131,111 @@ class _PaperDetailScreenState extends State<PaperDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'AI INSIGHTS',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.secondary,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 20,
+                            color: Colors.blue[600],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'AI INSIGHTS',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[700],
+                            ),
+                          ),
+                        ],
                       ),
                       if (_aiSummary == null && !_isSummarizing)
-                        TextButton.icon(
+                        ElevatedButton.icon(
                           onPressed: _generateSummary,
-                          icon: const Icon(Icons.auto_awesome, size: 18),
-                          label: const Text('Summarize'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: theme.colorScheme.secondary,
+                          icon: const Icon(Icons.bolt, size: 18),
+                          label: const Text('GENERATE'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue[600],
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 0,
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   if (_isSummarizing)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: CircularProgressIndicator(),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.blue[100]!),
+                      ),
+                      child: Column(
+                        children: [
+                          const CircularProgressIndicator(strokeWidth: 3),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Analyzing abstract...',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.blue[700],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   else if (_aiSummary != null)
                     Container(
-                      padding: const EdgeInsets.all(16),
-                      margin: const EdgeInsets.only(bottom: 24),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary.withValues(
-                          alpha: 0.1,
+                        gradient: LinearGradient(
+                          colors: [Colors.blue[50]!, Colors.white],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: theme.colorScheme.secondary.withValues(
-                            alpha: 0.2,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.blue[100]!),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue[200]!.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
+                        ],
                       ),
-                      child: Text(
-                        _aiSummary!,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          height: 1.5,
-                          color: theme.colorScheme.primary,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _aiSummary!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              height: 1.6,
+                              color: Colors.blue[900],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Text(
+                              'Powered by Gemini 1.5 Flash',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: Colors.blue[400],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: 24),
@@ -207,13 +268,39 @@ class _PaperDetailScreenState extends State<PaperDetailScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            // Bookmark / Save logic placeholder
+                            favoritesProvider.toggleFavorite(widget.paper);
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  isSaved
+                                      ? 'Removed from Library'
+                                      : 'Saved to Library',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
                           },
-                          icon: const Icon(Icons.bookmark_border),
-                          label: const Text('Save'),
+                          icon: Icon(
+                            isSaved ? Icons.bookmark : Icons.bookmark_border,
+                            color: isSaved ? theme.colorScheme.primary : null,
+                          ),
+                          label: Text(
+                            isSaved ? 'Saved' : 'Save',
+                            style: TextStyle(
+                              color: isSaved ? theme.colorScheme.primary : null,
+                            ),
+                          ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.grey[600],
-                            side: BorderSide(color: Colors.grey[400]!),
+                            foregroundColor: isSaved
+                                ? theme.colorScheme.primary
+                                : Colors.grey[600],
+                            side: BorderSide(
+                              color: isSaved
+                                  ? theme.colorScheme.primary
+                                  : Colors.grey[400]!,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

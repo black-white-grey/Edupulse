@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class AiService {
@@ -12,8 +13,12 @@ class AiService {
   Future<String> summarizeAbstract(String abstract) async {
     final prompt =
         '''
-Summarize the following research paper abstract into exactly 3 concise bullet points. 
-Focus on the core problem, methodology, and key finding.
+Summarize the following research paper abstract into exactly 3 concise, high-impact bullet points. 
+Format each point starting with a "•" character.
+Focus on:
+1. The specific problem addressed.
+2. The innovative methodology used.
+3. The most significant finding or implication.
 
 Abstract:
 $abstract
@@ -25,7 +30,7 @@ $abstract
 
       return response.text ?? 'No summary generated.';
     } catch (e) {
-      print('Error generating AI summary: $e');
+      debugPrint('Error generating AI summary: $e');
       rethrow;
     }
   }

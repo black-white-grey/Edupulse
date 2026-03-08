@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 import '../models/paper.dart';
+import '../providers/favorites_provider.dart';
 
 class PaperCard extends StatelessWidget {
   final Paper paper;
@@ -11,6 +13,8 @@ class PaperCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isFavorite = favoritesProvider.isFavorite(paper);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -33,6 +37,37 @@ class PaperCard extends StatelessWidget {
                         color: theme.colorScheme.primary,
                       ),
                       maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      favoritesProvider.toggleFavorite(paper);
+                    },
+                    icon: Icon(
+                      isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                      color: isFavorite
+                          ? theme.colorScheme.secondary
+                          : Colors.grey,
+                      size: 24,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      paper.authors.join(', '),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -66,16 +101,6 @@ class PaperCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                paper.authors.join(', '),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 12),
               Text(

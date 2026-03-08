@@ -5,12 +5,16 @@ class Paper {
   final List<String> authors;
   final String summary;
   final String pdfUrl;
+  final String publishedYear;
+  final String primaryCategory;
 
   Paper({
     required this.title,
     required this.authors,
     required this.summary,
     required this.pdfUrl,
+    required this.publishedYear,
+    required this.primaryCategory,
   });
 
   factory Paper.fromXmlElement(XmlElement element) {
@@ -36,8 +40,6 @@ class Paper {
         .replaceAll('\n', ' ');
 
     // Extract PDF link
-    // arXiv Atom feed uses <link title="pdf" href="..." rel="related" type="application/pdf"/>
-    // or just <link href="..." rel="alternate" type="application/pdf"/>
     String pdfUrl = '';
     final links = element.findElements('link');
     for (var link in links) {
@@ -48,16 +50,62 @@ class Paper {
       }
     }
 
+    // Extract published year
+    String publishedYear = 'Unknown';
+    final publishedElement = element.findElements('published');
+    if (publishedElement.isNotEmpty) {
+      final dateStr = publishedElement.first.innerText;
+      if (dateStr.length >= 4) {
+        publishedYear = dateStr.substring(0, 4);
+      }
+    }
+
+    // Extract primary category
+    String primaryCategory = 'Unknown';
+    final categoryElement = element.findElements('arxiv:primary_category');
+    if (categoryElement.isNotEmpty) {
+      primaryCategory = categoryElement.first.getAttribute('term') ?? 'Unknown';
+    } else {
+      final altCategory = element.findElements('category');
+      if (altCategory.isNotEmpty) {
+        primaryCategory = altCategory.first.getAttribute('term') ?? 'Unknown';
+      }
+    }
+
     return Paper(
       title: title,
       authors: authors,
       summary: summary,
       pdfUrl: pdfUrl,
+      publishedYear: publishedYear,
+      primaryCategory: primaryCategory,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'authors': authors.join('|'),
+      'summary': summary,
+      'pdfUrl': pdfUrl,
+      'publishedYear': publishedYear,
+      'primaryCategory': primaryCategory,
+    };
+  }
+
+  factory Paper.fromMap(Map<String, dynamic> map) {
+    return Paper(
+      title: map['title'] as String,
+      authors: (map['authors'] as String).split('|'),
+      summary: map['summary'] as String,
+      pdfUrl: map['pdfUrl'] as String,
+      publishedYear: map['publishedYear'] as String,
+      primaryCategory: map['primaryCategory'] as String? ?? 'Unknown',
     );
   }
 
   @override
   String toString() {
-    return 'Paper(title: $title, authors: $authors)';
+    return 'Paper(title: $title, authors: $authors, category: $primaryCategory)';
   }
 }
